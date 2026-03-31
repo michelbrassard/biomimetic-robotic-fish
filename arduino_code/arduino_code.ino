@@ -12,7 +12,19 @@ Servo servo3;
 Servo servo4;
 Servo servo5;
 
-float f = 5.0;
+// Parameters
+
+float amplitude1;
+float amplitude2;
+float amplitude3;
+
+float phase_offset1;
+float phase_offset2;
+float phase_offset3;
+
+float turn_angle;
+
+float frequency = 5.0;
 
 void setup() {
   Serial.begin(9600);
@@ -38,13 +50,13 @@ void loop() {
 
   float t = millis() / 1000.0;
   
-  float sine3 = 0.1 * sin(t * f + 1.2);
+  float sine3 = 0.1 * sin(t * frequency + 1.2);
   int angle3 = (90 * sine3);
 
-  float sine2 = 0.25 * sin(t * f + 0.9);
+  float sine2 = 0.25 * sin(t * frequency + 0.9);
   int angle2 = (90 * sine2);
 
-  float sine1 = 0.35 * sin(t * f);
+  float sine1 = 0.35 * sin(t * frequency);
   int angle1 = (90 * sine1);
   
   servo3.write(90 + angle3); //head
@@ -59,16 +71,16 @@ void loop() {
     switch (choice) {
       // Character "w"
       case 119:
-        f = f + 1.0;
+        frequency = frequency + 1.0;
         break;
       // Character "s"
       case 115:
-        f = f - 1.0;
+        frequency = frequency - 1.0;
         break;
     }
 
     Serial.print("Frequency: ");
-    Serial.println(f);
+    Serial.println(frequency);
   }
 }
 
