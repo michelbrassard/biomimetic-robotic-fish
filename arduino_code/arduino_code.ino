@@ -13,7 +13,6 @@ Servo servo4;
 Servo servo5;
 
 // Parameters
-
 float amplitude1;
 float amplitude2;
 float amplitude3;
@@ -22,9 +21,15 @@ float phase_offset1;
 float phase_offset2;
 float phase_offset3;
 
-float turn_angle;
+float head_turn_angle;
+float tail_turn_angle;
 
 float frequency = 5.0;
+
+bool ondulatory_swimming;
+bool burst_coast;
+bool turning;
+bool c_start;
 
 void setup() {
   Serial.begin(9600);
@@ -83,6 +88,5 @@ void loop() {
     Serial.println(frequency);
   }
 }
-
 
 
