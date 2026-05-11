@@ -1,4 +1,4 @@
-# https://shallowsky.com/blog/programming/python-read-characters.html
+# https://shallowsky.com/blog/programming/python-read-characters.html reading characters without wait
 
 import serial
 import sys, os
