@@ -1,16 +1,12 @@
-#include <Servo.h>
+#include <ESP32Servo.h>
 
-#define SERVO_PIN_1 13
-#define SERVO_PIN_2 12
-#define SERVO_PIN_3 11
-#define SERVO_PIN_4 10
-#define SERVO_PIN_5 9
+#define SERVO_PIN_3 27
+#define SERVO_PIN_2 26
+#define SERVO_PIN_1 25
 
 Servo servo1;
 Servo servo2;
 Servo servo3;
-Servo servo4;
-Servo servo5;
 
 // Parameters
 float amplitude1;
@@ -31,7 +27,7 @@ bool burst_coast;
 bool turning;
 bool c_start;
 
-bool zero;
+bool zero = true;
 
 void setup() {
   Serial.begin(9600);
@@ -86,13 +82,24 @@ void loop() {
       // Character "w"
       case 119:
         zero = false;
-        frequency = frequency + 1.0;
+        frequency = frequency + 0.50;
         break;
+
       // Character "s"
       case 115:
         zero = false;
-        frequency = frequency - 1.0;
+        frequency = frequency - 0.50;
         break;
+      
+      case 100:
+        
+        break;
+      
+      case 97:
+        
+        break;
+      
+      // zero
       case 48:
         zero = true;
         break;
