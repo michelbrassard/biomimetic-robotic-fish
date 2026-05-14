@@ -4,112 +4,157 @@
 #define SERVO_PIN_2 26
 #define SERVO_PIN_1 25
 
-Servo servo1;
-Servo servo2;
-Servo servo3;
+Servo tail_servo;
+Servo body_servo;
+Servo head_servo;
 
-// Parameters
-float amplitude1;
-float amplitude2;
-float amplitude3;
+float global_amplitude = 1.0;
+float tail_amplitude = global_amplitude * 0.35;
+float body_amplitude = global_amplitude * 0.25;
+float head_amplitude = global_amplitude * 0.15;
 
-float phase_offset1;
-float phase_offset2;
-float phase_offset3;
+float body_phase_offset = 0; //0.9;
+float head_phase_offset = 0; //1.2;
 
-float head_turn_angle;
-float tail_turn_angle;
+float turn_angle;
 
-float frequency = 5.0;
+float frequency = 0.6; // Hz
 
-bool ondulatory_swimming;
-bool burst_coast;
-bool turning;
 bool c_start;
+bool stop = true; // counter or time, using it like this because I want the ability to reset it
 
-bool zero = true;
+bool is_burst_coast = false;
+bool burst_coast_rising = false;
+float burst_time = 0.0;
+
+float phase_accumulator = 0.0;
+unsigned long last_micros = 0;
 
 void setup() {
   Serial.begin(9600);
 
-  servo1.attach(SERVO_PIN_1);
-  servo2.attach(SERVO_PIN_2);
-  servo3.attach(SERVO_PIN_3);
-  // servo4.attach(SERVO_PIN_4);
-  // servo5.attach(SERVO_PIN_5);
+  tail_servo.attach(SERVO_PIN_1);
+  body_servo.attach(SERVO_PIN_2);
+  head_servo.attach(SERVO_PIN_3);
 
-  servo1.write(90);
-  servo2.write(90);
-  servo3.write(90);
-  // servo4.write(90);
-  // servo5.write(90);
+  tail_servo.write(90);
+  body_servo.write(90);
+  head_servo.write(90);
 
-  delay(2000);
+  last_micros = micros();
 
   Serial.println("Started");
 }
 
 void loop() {
 
-  if (zero) {
-    servo3.write(90);
-    servo2.write(90);
-    servo1.write(90);
+  unsigned long current_micros = micros();
+  float delta_time = (current_micros - last_micros) / 1000000.0;
+  last_micros = current_micros;
+
+  if (delta_time > 0.1) delta_time = 0.1;
+
+  if (stop) {
+    head_servo.write(90);
+    body_servo.write(90);
+    tail_servo.write(90);
+    phase_accumulator = 0;
+    turn_angle = 0;
   }
   else {
-    float t = millis() / 1000.0;
+    phase_accumulator += 2.0 * PI * frequency * delta_time;
+    if (phase_accumulator > 2.0 * PI) {
+
+      phase_accumulator -= 2.0 * PI;
+    } 
+
+    if (head_phase_offset < 1.2) {
+      head_phase_offset = head_phase_offset + 0.01;
+    }
+    if (body_phase_offset < 0.9) {
+      body_phase_offset = body_phase_offset + 0.01;
+    }
   
-    float sine3 = 0.1 * sin(t * frequency + 1.2);
-    int angle3 = (90 * sine3);
+    float sine_head = head_amplitude * sin(phase_accumulator + head_phase_offset);
+    int head_angle = (90 * sine_head);
 
-    float sine2 = 0.25 * sin(t * frequency + 0.9);
-    int angle2 = (90 * sine2);
+    float sine_body = body_amplitude * sin(phase_accumulator + body_phase_offset);
+    int body_angle = (90 * sine_body);
 
-    float sine1 = 0.35 * sin(t * frequency);
-    int angle1 = (90 * sine1);
+    float sine_tail = tail_amplitude * sin(phase_accumulator);
+    int tail_angle = (90 * sine_tail);
     
-    servo3.write(90 + angle3); //head
-    servo2.write(90 - angle2);
-    servo1.write(90 + angle1);
+    head_servo.write(90 - head_angle); //head
+    body_servo.write(90 - body_angle + turn_angle);
+    tail_servo.write(90 + tail_angle);
+
+    if (is_burst_coast) {
+      burst_time = burst_time + delta_time;
+
+      if (global_amplitude > 0 && burst_coast_rising == false) {
+        global_amplitude = global_amplitude - 0.04;
+      }
+      else {
+        global_amplitude = global_amplitude + 0.04;
+      }
+
+      if (burst_time > 5) {
+        burst_time = 0;
+        burst_coast_rising = true;
+      }
+      
+      if (global_amplitude >= 1.0) 
+        burst_coast_rising = false;
+
+      tail_amplitude = global_amplitude * 0.35;
+      body_amplitude = global_amplitude * 0.25;
+      head_amplitude = global_amplitude * 0.1;
+    }
+
   }
 
   if (Serial.available() > 0) {
-
-    // Multiple characters can be added, writing "wwwww" will give +5, repeating the code for each character
-    // Negativan f obrne smjer kretanja vala
     int choice = Serial.read();
     switch (choice) {
-      // Character "w"
-      case 119:
-        zero = false;
-        frequency = frequency + 0.50;
+      case 119: // w
+        stop = false;
+        frequency = frequency + 0.1;
         break;
-
-      // Character "s"
-      case 115:
-        zero = false;
-        frequency = frequency - 0.50;
+      case 115: // s
+        stop = false;
+        frequency = frequency - 0.1;
         break;
-      
-      case 100:
-        
+      case 100: // d
+        if (turn_angle > -20) {
+          turn_angle = turn_angle - 5;
+        }
         break;
-      
-      case 97:
-        
+      case 97: // a
+        if (turn_angle < 20) turn_angle = turn_angle + 5;
         break;
-      
-      // zero
-      case 48:
-        zero = true;
+      case 48: // 0
+        head_phase_offset = 0;
+        body_phase_offset = 0;
+        stop = true;
+        break;
+      case 49: // 1
+        is_burst_coast = false;
+        tail_amplitude = 0.35;
+        body_amplitude = 0.25;
+        head_amplitude = 0.1;
+        break;
+      case 50: // 2
+        is_burst_coast = true;
         break;
     }
 
     Serial.print("Frequency: ");
-    Serial.println(frequency);
+    Serial.print(frequency);
+    Serial.println(" Hz");
+    Serial.print("Current character code: ");
     Serial.println(choice);
+    Serial.println();
   }
-
 }
 
 
